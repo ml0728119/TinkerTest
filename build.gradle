@@ -1,0 +1,24 @@
+
+buildscript {
+    repositories {
+        jcenter()
+        mavenLocal()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:2.3.0-beta1'
+        classpath "com.tencent.tinker:tinker-patch-gradle-plugin:${TINKER_VERSION}"
+        classpath 'com.tencent.mm:AndResGuard-gradle-plugin:1.1.15'
+    }
+}
+
+allprojects {
+    repositories {
+        jcenter()
+        mavenLocal()
+    }
+}
+//task uploadPgyer(type: Exec) {
+//    println("4561237489456131325--  上传");
+//    executable 'curl'
+//    args "-F", "\"file=@${workingDir}/bakApk/V1.0.0-12.24_16.35--93ecc93/flavor1/app-flavor1-release.apk\"", "-F", "\"uKey=b7b7c394273b4a322c6c581454322ece\"", "-F", "\"_api_key=01a6c110c8ca950f35eb85722ae5d037\"", "https://www.pgyer.com/apiv1/app/upload"
+//}
