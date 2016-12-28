@@ -78,7 +78,7 @@ andResGuard {
 ext {
     //for some reason, you may want to ignore tinkerBuild, such as instant run debug build?
     tinkerEnabled = true
-    tinkerOldDir = "D:\\Git\\tinker3\\tinker-sample-android\\bakApk\\V1.0.0-12.27_13.40-93ecc93"
+    tinkerOldDir = "D:\\StudioWorks\\MallGit\\TinkerTest\\bakApk\\V1.0.0-12.28_14.59-b7137c6"
     //for normal build
     //old apk file to build patch apk
     tinkerOldApkPath = "${getOldPath()}" + "/signed_7zip_aligned.apk"
@@ -114,7 +114,7 @@ def getApplyResourceMappingPath() {
 
 def getTinkerIdValue() {
 //    return hasProperty("TINKER_ID") ? TINKER_ID : gitSha()
-    return 110;
+    return 111;
 }
 
 def buildWithTinker() {
@@ -205,6 +205,11 @@ if (buildWithTinker()) {
              * we will gen the tinkerId in your manifest automatic
              */
             tinkerId = getTinkerIdValue()
+            /**
+             * if keepDexApply is true, class in which dex refer to the old apk.
+             * open this can reduce the dex diff file size.
+             */
+            keepDexApply = false
         }
 
         dex {
@@ -216,20 +221,6 @@ if (buildWithTinker()) {
              * or you want to save rom or check quicker, you can use raw mode also
              */
             dexMode = "jar"
-            /**
-             * optional，default 'false'
-             * if usePreGeneratedPatchDex is true, tinker framework will generate auxiliary class
-             * and insert auxiliary instruction when compiling base package using
-             * assemble{Debug/Release} task to prevent class pre-verified issue in dvm.
-             * Besides, a real dex file contains necessary class will be generated and packed into
-             * patch package instead of any patch info files.
-             *
-             * Use this mode if you have to use any dex encryption solutions.
-             *
-             * Notice: If you change this value, please trigger clean task
-             * and regenerate base package.
-             */
-            usePreGeneratedPatchDex = false
             /**
              * necessary，default '[]'
              * what dexes in apk are expected to deal with tinkerPatch
@@ -478,7 +469,6 @@ if (buildWithTinker()) {
 
                 if ("resguard".equalsIgnoreCase(it.name)) {
                     it.doLast {
-                        println("cccccccccccccccccccccccccccccccccccccccccccccccccccccc");
                         copy {
                             from "${buildDir}/outputs/apk/AndResGuard_${project.getName()}-${taskName}/${project.getName()}-${taskName}_signed.apk"
                             into file(bakPath.absolutePath + "/resguard")
@@ -502,26 +492,6 @@ if (buildWithTinker()) {
                                 fileName.replace("resource_mapping_${project.getName()}-release.txt", "${project.getName()}-${taskName}-${date}-resource_mapping.txt")
                             }
 
-//                            //---------------------------------------不需要
-//                            def fileNamePrefix = "${project.name}-${variant.baseName}"
-//                            def newFileNamePrefix = hasFlavors ? "${fileNamePrefix}" : "${fileNamePrefix}-${date}"
-//                            def destPath = hasFlavors ? file("${bakPath}/${project.name}-${date}/${variant.flavorName}") : bakPath
-//                            from variant.outputs.outputFile
-//                            into destPath
-//                            rename { String fileName ->
-//                                fileName.replace("${fileNamePrefix}.apk", "${newFileNamePrefix}.apk")
-//                            }
-//                            from "${buildDir}/outputs/mapping/${variant.dirName}/mapping.txt"
-//                            into destPath
-//                            rename { String fileName ->
-//                                fileName.replace("mapping.txt", "${newFileNamePrefix}-mapping.txt")
-//                            }
-//
-//                            from "${buildDir}/intermediates/symbols/${variant.dirName}/R.txt"
-//                            into destPath
-//                            rename { String fileName ->
-//                                fileName.replace("R.txt", "${newFileNamePrefix}-R.txt")
-//                            }
                         }
                     }
                 }
@@ -575,5 +545,6 @@ if (buildWithTinker()) {
             }
         }
     }
+
 }
 
