@@ -19,7 +19,6 @@ package tinker.sample.android.crash;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.SystemClock;
-import android.widget.Toast;
 
 import com.tencent.tinker.lib.tinker.TinkerApplicationHelper;
 import com.tencent.tinker.lib.util.TinkerLog;
@@ -78,10 +77,8 @@ public class SampleUncaughtExceptionHandler implements Thread.UncaughtExceptionH
             }
             boolean isCausedByXposed = false;
             //for art, we can't know the actually crash type
-            //art's xposed has not much people
-            if (ShareTinkerInternals.isVmArt()) {
-                isCausedByXposed = true;
-            } else if (ex instanceof IllegalAccessError && ex.getMessage().contains(DALVIK_XPOSED_CRASH)) {
+            //just ignore art
+            if (ex instanceof IllegalAccessError && ex.getMessage().contains(DALVIK_XPOSED_CRASH)) {
                 //for dalvik, we know the actual crash type
                 isCausedByXposed = true;
             }
@@ -94,9 +91,6 @@ public class SampleUncaughtExceptionHandler implements Thread.UncaughtExceptionH
 
                 TinkerApplicationHelper.cleanPatch(applicationLike);
                 ShareTinkerInternals.setTinkerDisableWithSharedPreferences(applicationLike.getApplication());
-                //method 2
-                //or you can mention user to uninstall Xposed!
-                Toast.makeText(applicationLike.getApplication(), "please uninstall Xposed, illegal modify the app", Toast.LENGTH_LONG).show();
             }
         }
     }
@@ -123,14 +117,14 @@ public class SampleUncaughtExceptionHandler implements Thread.UncaughtExceptionH
             }
 
             SharedPreferences sp = applicationLike.getApplication().getSharedPreferences(ShareConstants.TINKER_SHARE_PREFERENCE_CONFIG, Context.MODE_MULTI_PROCESS);
-            int fastCrashCount = sp.getInt(currentVersion, 0);
+            int fastCrashCount = sp.getInt(currentVersion, 0) + 1;
             if (fastCrashCount >= MAX_CRASH_COUNT) {
                 SampleTinkerReport.onFastCrashProtect();
                 TinkerApplicationHelper.cleanPatch(applicationLike);
                 TinkerLog.e(TAG, "tinker has fast crash more than %d, we just clean patch!", fastCrashCount);
                 return true;
             } else {
-                sp.edit().putInt(currentVersion, ++fastCrashCount).commit();
+                sp.edit().putInt(currentVersion, fastCrashCount).commit();
                 TinkerLog.e(TAG, "tinker has fast crash %d times", fastCrashCount);
             }
         }
