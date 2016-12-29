@@ -118,5 +118,6 @@ android {
     }
 }
 
-
-
+def getOld() {
+    return "112452342324234"
+}

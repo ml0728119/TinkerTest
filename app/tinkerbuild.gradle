@@ -78,7 +78,7 @@ andResGuard {
 ext {
     //for some reason, you may want to ignore tinkerBuild, such as instant run debug build?
     tinkerEnabled = true
-    tinkerOldDir = "D:\\StudioWorks\\MallGit\\TinkerTest\\bakApk\\V1.0.0-12.28_14.59-b7137c6"
+    tinkerOldDir = "2324215"
     //for normal build
     //old apk file to build patch apk
     tinkerOldApkPath = "${getOldPath()}" + "/signed_7zip_aligned.apk"
@@ -92,12 +92,20 @@ ext {
 
 def bakPath = file("${buildDir}/bakApk/")
 
+
+
 def getOldPath() {
-    return hasProperty("OLD_DIR") ? OLD_DIR : ext.tinkerOldDir
+    def path = hasProperty("OLD_DIR") ? OLD_DIR : getOld()
+
+    if (path == "") {
+        return null
+    } else {
+        return path
+    }
 }
 
 def getOldResourceMappingPath() {
-    return hasProperty("OLD_DIR") ? file("${file(getOldPath())}/mapping-resource.txt") : null
+    return getOldPath() == null ? null : file("${file(getOldPath())}/mapping-resource.txt")
 }
 
 def getOldApkPath() {
@@ -120,11 +128,13 @@ def getTinkerIdValue() {
 def buildWithTinker() {
     return hasProperty("TINKER_ENABLE") ? TINKER_ENABLE : ext.tinkerEnabled
 }
+
 def dirName() {
     //打包文件夹
-    def date = hasProperty("BUILD_DATE") ? BUILD_DATE :new Date().format("MM.dd_HH.mm").toString()
+    def date = hasProperty("BUILD_DATE") ? BUILD_DATE : new Date().format("MM.dd_HH.mm").toString()
     return "V${android.defaultConfig.versionName}-${date}-${gitSha()}"
 }
+
 def outPath() {
     //打包文件夹
     return file("${rootDir}/bakApk/${dirName()}")
@@ -133,7 +143,6 @@ def outPath() {
 def getTinkerBuildFlavorDirectory() {
     return ext.tinkerBuildFlavorDirectory
 }
-
 
 
 def hasFlavors() {
@@ -499,7 +508,7 @@ if (buildWithTinker()) {
 
             if ("assemble${taskName.capitalize()}".equalsIgnoreCase(it.name)) {
                 it.doLast {
-                    println("---------------aa----------- ${outPath() } --------${project.name}-${variant.baseName}")
+                    println("---------------aa----------- ${outPath()} --------${project.name}-${variant.baseName}")
                     copy {
                         def fileNamePrefix = "${project.name}-${variant.baseName}"
                         def destPath = hasFlavors() ? file("${outPath()}/${variant.flavorName}") : file("${outPath()}")
