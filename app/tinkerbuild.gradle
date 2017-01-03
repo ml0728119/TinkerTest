@@ -93,10 +93,8 @@ ext {
 def bakPath = file("${buildDir}/bakApk/")
 
 
-
 def getOldPath() {
     def path = hasProperty("OLD_DIR") ? OLD_DIR : getOld()
-
     if (path == "") {
         return null
     } else {
@@ -375,49 +373,12 @@ if (buildWithTinker()) {
 //            }
 //        }
 //    }
-//    project.afterEvaluate {
-//        //sample use for build all flavor for one time
-//        if (hasFlavors) {
-//            task(tinkerPatchAllFlavorRelease) {
-//                group = 'tinker'
-//                def originOldPath = getTinkerBuildFlavorDirectory()
-//                for (String flavor : flavors) {
-//                    def tinkerTask = tasks.getByName("tinkerPatch${flavor.capitalize()}Release")
-//                    dependsOn tinkerTask
-//                    def preAssembleTask = tasks.getByName("process${flavor.capitalize()}ReleaseManifest")
-//                    preAssembleTask.doFirst {
-//                        String flavorName = preAssembleTask.name.substring(7, 8).toLowerCase() + preAssembleTask.name.substring(8, preAssembleTask.name.length() - 15)
-//                        project.tinkerPatch.oldApk = "${originOldPath}/${flavorName}/${project.name}-${flavorName}-release.apk"
-//                        project.tinkerPatch.buildConfig.applyMapping = "${originOldPath}/${flavorName}/${project.name}-${flavorName}-release-mapping.txt"
-//                        project.tinkerPatch.buildConfig.applyResourceMapping = "${originOldPath}/${flavorName}/${project.name}-${flavorName}-release-R.txt"
-//
-//                    }
-//
-//                }
-//            }
-//
-//            task(tinkerPatchAllFlavorDebug) {
-//                group = 'tinker'
-//                def originOldPath = getTinkerBuildFlavorDirectory()
-//                for (String flavor : flavors) {
-//                    def tinkerTask = tasks.getByName("tinkerPatch${flavor.capitalize()}Debug")
-//                    dependsOn tinkerTask
-//                    def preAssembleTask = tasks.getByName("process${flavor.capitalize()}DebugManifest")
-//                    preAssembleTask.doFirst {
-//                        String flavorName = preAssembleTask.name.substring(7, 8).toLowerCase() + preAssembleTask.name.substring(8, preAssembleTask.name.length() - 13)
-//                        project.tinkerPatch.oldApk = "${originOldPath}/${flavorName}/${project.name}-${flavorName}-debug.apk"
-//                        project.tinkerPatch.buildConfig.applyMapping = "${originOldPath}/${flavorName}/${project.name}-${flavorName}-debug-mapping.txt"
-//                        project.tinkerPatch.buildConfig.applyResourceMapping = "${originOldPath}/${flavorName}/${project.name}-${flavorName}-debug-R.txt"
-//                    }
-//
-//                }
-//            }
-//        }
-//    }
-//}
 
     //--------------------资源
-
+    List<String> flavors = new ArrayList<>();
+    project.android.productFlavors.each { flavor ->
+        flavors.add(flavor.name)
+    }
     /**
      * bak apk and mapping
      */
@@ -428,30 +389,50 @@ if (buildWithTinker()) {
         def taskName = variant.name
 //        def date = new Date().format("MM.dd_HH.mm")
 //        def newPath = file("${rootDir}/bakApk/V${versionName}-${date}--${gitSha()}")
+
+
         tasks.all {
 
             if (variant.buildType.name == 'release') {
+                println("-----------------------" + it.name + "   111 " + taskName.capitalize())
                 if ("tinkerPatch${taskName.capitalize()}".equalsIgnoreCase(it.name)) {
                     // find resguard task
+                    println("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
                     def resguardTask
                     tasks.all {
                         if (it.name.startsWith("resguard")) {
                             resguardTask = it
                         }
                     }
+
                     it.doFirst({
                         // change build apk path
-                        it.buildApkPath = "${buildDir}/outputs/apk/AndResGuard_${project.getName()}-${taskName}/${project.getName()}-${taskName}_signed.apk"
+                        println("-----kkkkkkkkkkkkkkkkkkkkkkk---------" + variant.flavorName)
+
+
+                        println("-----bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb---------" + it.buildApkPath)
+                        if (hasFlavors()) {
+                            //需要修改文件路径
+                            def resGuardDir = "${project.getName()}-${variant.baseName}"
+                            def apkName = "${project.getName()}-${variant.baseName}_signed.apk"
+                            it.buildApkPath = "${buildDir}/outputs/apk/AndResGuard_${resGuardDir}/${apkName}"
+                            project.tinkerPatch.oldApk = "${getOldPath()}/${variant.flavorName}/signed_7zip_aligned.apk"
+                            project.tinkerPatch.buildConfig.applyMapping = "${getOldPath()}/${variant.flavorName}/mapping.txt"
+                            project.tinkerPatch.buildConfig.applyResourceMapping = "${getOldPath()}/${variant.flavorName}/R.txt"
+                        } else {
+                            it.buildApkPath = "${buildDir}/outputs/apk/AndResGuard_${project.getName()}-${taskName}/${project.getName()}-${taskName}_signed.apk"
+                        }
+
                     })
                     it.doLast({
                         //生成补丁之后
                         copy {
 //                            def fileNamePrefix = "${project.name}-${variant.baseName}"
 //                            def newFileNamePrefix = hasFlavors() ? "${fileNamePrefix}" : "${fileNamePrefix}-${date}"
-                            def destPath = file("${getOldPath()}/patch/V${versionName}-${dirName()}-${gitSha()}")
-
-                            def patchDir = "${buildDir}/outputs/tinkerPatch/${variant.buildType.name}"
-
+                            def patchDir = hasFlavors() ? "${buildDir}/outputs/tinkerPatch/${variant.flavorName}/${variant.buildType.name}" : "${buildDir}/outputs/tinkerPatch/${variant.buildType.name}"
+                            def destPath = hasFlavors() ? file("${getOldPath()}/${variant.flavorName}/patch/${dirName()}") : file("${getOldPath()}/patch/${dirName()}")
+                            println("-----b生成补丁之后------destPath---" + destPath)
+                            println("-----b生成补丁之后-----patchDir----" + patchDir)
                             //移动资源混淆apk
                             from "${patchDir}/log.txt"
                             into destPath
@@ -473,10 +454,16 @@ if (buildWithTinker()) {
                     })
 
                     // change task dependence to resguard task
-                    it.dependsOn resguardTask
+                    println("Task---------------" + "resguard" + "${taskName.capitalize()}")
+                    it.dependsOn hasFlavors() ? tasks.getByName("resguard${taskName.capitalize()}") : resguardTask
+
                 }
 
                 if ("resguard".equalsIgnoreCase(it.name)) {
+
+                    it.doFirst {
+                        println("-----cccccccccccccccccccccccccccccc---------" + it.name)
+                    }
                     it.doLast {
                         copy {
                             from "${buildDir}/outputs/apk/AndResGuard_${project.getName()}-${taskName}/${project.getName()}-${taskName}_signed.apk"
@@ -508,7 +495,7 @@ if (buildWithTinker()) {
 
             if ("assemble${taskName.capitalize()}".equalsIgnoreCase(it.name)) {
                 it.doLast {
-                    println("---------------aa----------- ${outPath()} --------${project.name}-${variant.baseName}")
+                    println("---------------${it.name}---------- ${outPath()} --------${project.name}-${variant.baseName}")
                     copy {
                         def fileNamePrefix = "${project.name}-${variant.baseName}"
                         def destPath = hasFlavors() ? file("${outPath()}/${variant.flavorName}") : file("${outPath()}")
@@ -531,6 +518,30 @@ if (buildWithTinker()) {
             }
 
             if ("resguard${taskName.capitalize()}".equalsIgnoreCase(it.name) || "resguardRelease".equalsIgnoreCase(it.name)) {
+                it.doFirst {
+                    println("-------------转换资源文件路径------- ${outPath()} --------${it.name}")
+//                    hasFlavors() ? file("${getOldPath()}/${variant.flavorName}/mapping-resource.txt") : file("${getOldPath()}/patch/${dirName()}")
+                    if (hasFlavors()) {
+//                        project.andResGuard.mappingFile = file("D:\\StudioWorks\\MallGit\\TinkerTest\\bakApk\\V1.0.0-01.03_13.21-081b5fd\\flavor2\\mapping-resource.txt")
+                        project.andResGuard.mappingFile = file("${getOldPath()}/${variant.flavorName}/mapping-resource.txt")
+                        println("-------------转换资源文件路径------- ${project.andResGuard.mappingFile}")
+                    }
+
+//                    for (String flavor : flavors) {
+//                        def tinkerTask = tasks.getByName("tinkerPatch${flavor.capitalize()}Release")
+//                        dependsOn tinkerTask
+//                        def preAssembleTask = tasks.getByName("process${flavor.capitalize()}ReleaseManifest")
+//                        preAssembleTask.doFirst {
+//                            String flavorName = preAssembleTask.name.substring(7, 8).toLowerCase() + preAssembleTask.name.substring(8, preAssembleTask.name.length() - 15)
+//                            project.tinkerPatch.oldApk = "${originOldPath}/${flavorName}/${project.name}-${flavorName}-release.apk"
+//                            project.tinkerPatch.buildConfig.applyMapping = "${originOldPath}/${flavorName}/${project.name}-${flavorName}-release-mapping.txt"
+//                            project.tinkerPatch.buildConfig.applyResourceMapping = "${originOldPath}/${flavorName}/${project.name}-${flavorName}-release-R.txt"
+//
+//                        }
+//                    }
+
+                }
+
                 it.doLast {
                     copy {
                         def destPath = hasFlavors() ? file("${outPath()}/${variant.flavorName}") : file("${outPath()}")
@@ -554,6 +565,46 @@ if (buildWithTinker()) {
             }
         }
     }
+//    project.afterEvaluate {
+//        //sample use for build all flavor for one time
+//        println("--------------------------project.afterEvaluate-------------------------")
+//        if (hasFlavors()) {
+//            task(tinkerPatchAllFlavorRelease) {
+//                println("--------------------------task(tinkerPatchAllFlavorRelease)-------------------------")
+//                group = 'tinker'
+//                def originOldPath = getTinkerBuildFlavorDirectory()
+//                for (String flavor : flavors) {
+//                    def tinkerTask = tasks.getByName("tinkerPatch${flavor.capitalize()}Release")
+//                    dependsOn tinkerTask
+//                    def preAssembleTask = tasks.getByName("process${flavor.capitalize()}ReleaseManifest")
+//                    preAssembleTask.doFirst {
+//                        String flavorName = preAssembleTask.name.substring(7, 8).toLowerCase() + preAssembleTask.name.substring(8, preAssembleTask.name.length() - 15)
+//                        project.tinkerPatch.oldApk = "${originOldPath}/${flavorName}/${project.name}-${flavorName}-release.apk"
+//                        project.tinkerPatch.buildConfig.applyMapping = "${originOldPath}/${flavorName}/${project.name}-${flavorName}-release-mapping.txt"
+//                        project.tinkerPatch.buildConfig.applyResourceMapping = "${originOldPath}/${flavorName}/${project.name}-${flavorName}-release-R.txt"
+//
+//                    }
+//
+//                }
+//            }
 
+//            task(tinkerPatchAllFlavorDebug) {
+//                group = 'tinker'
+//                def originOldPath = getTinkerBuildFlavorDirectory()
+//                for (String flavor : flavors) {
+//                    def tinkerTask = tasks.getByName("tinkerPatch${flavor.capitalize()}Debug")
+//                    dependsOn tinkerTask
+//                    def preAssembleTask = tasks.getByName("process${flavor.capitalize()}DebugManifest")
+//                    preAssembleTask.doFirst {
+//                        String flavorName = preAssembleTask.name.substring(7, 8).toLowerCase() + preAssembleTask.name.substring(8, preAssembleTask.name.length() - 13)
+//                        project.tinkerPatch.oldApk = "${originOldPath}/${flavorName}/${project.name}-${flavorName}-debug.apk"
+//                        project.tinkerPatch.buildConfig.applyMapping = "${originOldPath}/${flavorName}/${project.name}-${flavorName}-debug-mapping.txt"
+//                        project.tinkerPatch.buildConfig.applyResourceMapping = "${originOldPath}/${flavorName}/${project.name}-${flavorName}-debug-R.txt"
+//                    }
+//
+//                }
+//            }
+//
+//        }
+//    }
 }
-

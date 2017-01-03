@@ -89,15 +89,15 @@ android {
 //        cruncherEnabled false
 //    }
 
-////    use to test flavors support
-//    productFlavors {
-//        flavor1 {
-//            applicationId 'tinker.sample.android.flavor1'
-//        }
-//        flavor2 {
-//            applicationId 'tinker.sample.android.flavor2'
-//        }
-//    }
+//    use to test flavors support
+    productFlavors {
+        flavor1 {
+            applicationId 'tinker.sample.android.flavor1'
+        }
+        flavor2 {
+            applicationId 'tinker.sample.android.flavor2'
+        }
+    }
 
     buildTypes {
         release {
@@ -119,5 +119,5 @@ android {
 }
 
 def getOld() {
-    return "112452342324234"
+    return "D:\\StudioWorks\\MallGit\\TinkerTest\\bakApk\\V1.0.0-01.03_13.21-081b5fd"
 }

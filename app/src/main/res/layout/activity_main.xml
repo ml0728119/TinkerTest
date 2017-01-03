@@ -60,9 +60,9 @@
         android:layout_below="@+id/killSelf"
         android:text="show info"/>
 
-    <!--<Button-->
-        <!--android:layout_width="wrap_content"-->
-        <!--android:layout_height="wrap_content"-->
-        <!--android:layout_alignParentBottom="true"-->
-        <!--android:text="show info"/>-->
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:text="show info"/>
 </RelativeLayout>
